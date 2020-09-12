@@ -1,68 +1,59 @@
-const bcrypt = require('bcryptjs')
-const Users = require('../users/user-model')
-const jwt = require('jsonwebtoken')
 const router = require('express').Router();
+const jwt = require("jsonwebtoken")
+const bcrypt = require("bcryptjs")
+const Users = require("../users/user-model")
 
-router.post('/register', async (req, res, next)=>{
+router.post("/register", async (req, res, next) => {
+  const { username, password } = req.body
+
+  if (!username || !password) {
+    return res.status(400).json({ message: "Enter both, username and password!" })
+  }
+
   try {
-      const {username, password, department} = req.body
-      const user = await Users.findBy({username}).first()
+    const user = await Users.findBy({ username }).first()
 
-      if(user){
-          return res.status(409).json({
-              message: "Username is already taken",
-          })
-      }
-      const newUser = await Users.add({
-          username,
-          password: await bcrypt.hash(password, 14),
-          department,
-      })
-      res.status(201).json(newUser)
-  } catch (error) {
-      next(error)
+    if (user) {
+      res.status(409).json({ message: "This username is not available" })
+    }
+    res.json(await Users.add(req.body))
+  }
+  catch (err) {
+    next(err)
   }
 })
 
-router.post('/login', async(req, res, next)=>{
+router.post('/login', async (req, res, next) => {
+  // implement login
   try {
-      const {username, password} = req.body
-      const user = await Users.findBy({username}).first()
+    const { username } = req.body
+    const user = await Users.findBy({ username: username }).first()
 
-      if(!user){
-          return res.status(401).json({
-              message: "You shall not pass!",
-          })
-      }
-      const passwordValid = await bcrypt.compare(password, user.password)
-      if(!passwordValid){
-          return res.status(401).json({
-              message: "You shall not pass!",
-          })
-      }
-      const payload = {
-          userId: user.id,
-      }
-      res.cookie('token', jwt.sign(payload, process.env.JWT_SECRET))
-      res.json({
-          message: `Welcome ${user.username}`,
-      })
-  } catch (error) {
-      next(error)
-  } 
-})
+    console.log(user)
+    if (!user) {
+      res.status(401).json({ message: "Invalid username" })
+    }
 
-router.get('/logout', async(req, res, next)=> {
-  try {
-      req.session.destroy((err)=>{
-          if(err){
-              next(err)
-          }else{
-              res.status(204).end()
-          }
-      })
-  } catch (error) {
-      next(error)
+    const { password } = req.body
+    const validPassword = await bcrypt.compareSync(password, user.password)
+
+    if (!validPassword) {
+      res.status(401).json({ message: "Invalid password" })
+    }
+
+    const token = {
+      userId: user.id,
+      username: user.username
+    }
+
+    res.json({
+      message: `Welcome ${user.username}!`,
+      token: jwt.sign(token, process.env.JWT_SECRET),
+    });
   }
-})
+  catch (err) {
+    next(err)
+  }
+});
+
 module.exports = router;

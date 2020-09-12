@@ -1,30 +1,35 @@
-const db = require('../data/db-config')
+const db = require("../database/dbConfig")
+const bcrypt = require("bcryptjs")
 
-function find(){
-    return db('users').select('id', 'username', 'department')
+
+const add = async (user) => {
+    user.password = await bcrypt.hash(user.password, 14);
+    const [id] = await db("users").insert(user);
+
+    return findById(id);
 }
 
-function findBy(filter){
-    return db('users')
-    .select('id', 'username', 'password', 'department')
-    .where(filter)
+const find = () => {
+    return db("users")
+        .select("id", "username")
 }
 
-function findById(id){
-    return db('users')
-        .select('id', 'username', 'department')
-        .where({id})
+const findBy = (filter) => {
+    return db("users")
+        .select("id", "username", "password")
+        .where(filter)
+}
+
+const findById = (id) => {
+    return db("users")
+        .select("id", "username", "password")
+        .where({ id })
         .first()
 }
 
-async function add(user){
-    const [id] = await db('users').insert(user)
-    return findById(id)
-}
-
 module.exports = {
+    add,
     find,
     findBy,
-    findById,
-    add,
+    findById
 }

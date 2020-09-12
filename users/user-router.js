@@ -4,7 +4,7 @@ const restrict = require("../auth/authenticate-middleware")
 
 const router = express.Router()
 
-router.get('/users', restrict, async(req, res, next)=>{
+router.get('/', restrict, async(req, res, next)=>{
     try {
         res.json(await Users.find())
     } catch (error) {
